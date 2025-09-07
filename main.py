@@ -2,8 +2,8 @@ from fastecdsa import keys
 from fastecdsa.curve import P384
 from fastecdsa.encoding.pem import PEMEncoder
 
-from crypto import ElGamalCiphertext
-from parsing import import_public_key, export_public_key, import_private_key
+from ciphertext import ElGamalCiphertext
+from keyio import import_public_key, export_public_key, import_private_key
 
 
 def keygen():
@@ -19,18 +19,21 @@ def fetch_keys():
     return sk, pk
 
 
-def serialise_ballot(ct: ElGamalCiphertext):
-    pass
-
-
 def main():
     # x, H = keygen()
     sk, pk = fetch_keys()
 
     choice = "0000.103"
     ct = pk.encode_and_encrypt(choice)
-    dec = sk.decrypt_and_decode(ct)
 
+    with open("./ct.bin", "wb") as f:
+        f.write(ct.to_asn1())
+
+    with open("./ct.bin", "rb") as f:
+        ct = ElGamalCiphertext()
+        ct.from_asn1(f.read())
+
+    dec = sk.decrypt_and_decode(ct)
     assert dec == choice
 
 

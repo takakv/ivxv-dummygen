@@ -1,17 +1,12 @@
 import secrets
-from typing import NamedTuple
 
 from fastecdsa.curve import P384
 from fastecdsa.point import Point
 
+from ciphertext import ElGamalCiphertext
 from utils import decode_from_point, encode_to_point
 
 ENCODING_MAX_TRIES = 10
-
-
-class ElGamalCiphertext(NamedTuple):
-    U: Point
-    V: Point
 
 
 class EGPublicKey:
