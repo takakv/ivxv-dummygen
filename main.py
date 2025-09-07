@@ -1,6 +1,7 @@
 import base64
 import secrets
 from textwrap import wrap
+from typing import NamedTuple
 
 from fastecdsa import keys
 from fastecdsa.curve import P384
@@ -180,13 +181,65 @@ def encode_to_point(message: bytes, H: Point, max_tries=10) -> Point:
     raise RuntimeError("could not encode the data as a curve point")
 
 
+def decode_from_point(M: Point, H: Point, shift=10) -> bytes:
+    curve_byte_len = (H.curve.p.bit_length() + 7) // 8
+
+    x_bytes = M.x.to_bytes(curve_byte_len, "big")
+
+    # The padded message is structured as follows: 01 head || padding 0 || message.
+    # The leading (padding) bits must be 0b01.
+    # The padding head is necessary for byte-length alignment and length. It consists of 1-bits that follow
+    # the leading 0b01 and 0-bits that precede the leading 0b01.
+    # The padding itself consists of 1-bits, and is terminated by a 0-bit ([0xFF]* 0xFE after right-shifting).
+    if (x_bytes[0] & 0b11000000) != 0b01000000:
+        raise RuntimeError("incorrect leading plaintext padding bits")
+
+    tmp = M.x >> shift
+    padded = tmp.to_bytes(curve_byte_len, "big")
+
+    # Verify the padding header to ensure that the shift is correct.
+    head = PADDING_HEAD[shift]
+    if bytes(head) != padded[:len(head)]:
+        raise RuntimeError("incorrect padding heading")
+
+    try:
+        # 0xFE = 0b11111110 as the byte-aligned padding is terminated by a 0-bit.
+        padding_end = padded.index(0xfe)
+    except ValueError:
+        raise RuntimeError("padding end not found")
+
+    unpadded = padded[padding_end + 1:]
+    return unpadded
+
+
+class ElGamalCiphertext(NamedTuple):
+    U: Point
+    V: Point
+
+
+def encrypt(P: Point, H: Point) -> ElGamalCiphertext:
+    r = secrets.randbelow(H.curve.q)
+    return ElGamalCiphertext(H.curve.G * r, P + (H * r))
+
+
+def decrypt(ct: ElGamalCiphertext, H: Point, x: int, shift=10) -> str:
+    D = x * ct.U
+    M = ct.V - D
+
+    m_bytes = decode_from_point(M, H, shift)
+    return m_bytes.decode("ascii")
+
+
 def main():
     # x, H = keygen()
     x, H = fetch_keys()
 
     choice = "0000.103"
     encoded = encode_to_point(choice.encode("ascii"), H)
-    print(encoded)
+    ct = encrypt(encoded, H)
+    dec = decrypt(ct, H, x)
+
+    assert dec == choice
 
 
 if __name__ == "__main__":
