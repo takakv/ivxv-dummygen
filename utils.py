@@ -1,3 +1,4 @@
+from fastecdsa.curve import Curve
 from fastecdsa.point import Point
 
 
@@ -60,8 +61,8 @@ PADDING_FILL = b"\xFF"
 PADDING_END = b"\xFE"
 
 
-def encode_to_point(message: bytes, H: Point, max_tries: int) -> Point:
-    curve_byte_len = (H.curve.p.bit_length() + 7) // 8
+def encode_to_point(message: bytes, curve: Curve, max_tries: int) -> Point:
+    curve_byte_len = (curve.p.bit_length() + 7) // 8
 
     padding_head = PADDING_HEAD[max_tries]
     padding_len = curve_byte_len - len(padding_head) - len(message) - 1
@@ -70,17 +71,17 @@ def encode_to_point(message: bytes, H: Point, max_tries: int) -> Point:
     candidate = int.from_bytes(padded, "big") << max_tries
     for _ in range(max_tries):
         # y^2 = x^3 + ax + b
-        rhs = (pow(candidate, 3, H.curve.p) + H.curve.a * candidate + H.curve.b) % H.curve.p
-        if legendre(rhs, H.curve.p) == 1:
-            y = tonelli(rhs, H.curve.p)
-            return Point(candidate, y, H.curve)
+        rhs = (pow(candidate, 3, curve.p) + curve.a * candidate + curve.b) % curve.p
+        if legendre(rhs, curve.p) == 1:
+            y = tonelli(rhs, curve.p)
+            return Point(candidate, y, curve)
         candidate += 1
 
     raise RuntimeError("could not encode the data as a curve point")
 
 
-def decode_from_point(M: Point, H: Point, shift: int) -> bytes:
-    curve_byte_len = (H.curve.p.bit_length() + 7) // 8
+def decode_from_point(M: Point, curve: Curve, shift: int) -> bytes:
+    curve_byte_len = (curve.p.bit_length() + 7) // 8
 
     x_bytes = M.x.to_bytes(curve_byte_len, "big")
 

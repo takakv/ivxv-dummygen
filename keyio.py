@@ -2,23 +2,13 @@ import base64
 import secrets
 from textwrap import wrap
 
-from fastecdsa import keys
-from fastecdsa.encoding.pem import PEMEncoder
 from fastecdsa.point import Point
-from pyasn1.codec.der import decoder as der_decoder, encoder as der_encoder
+from pyasn1.codec.der import encoder as der_encoder
 from pyasn1.type.univ import BitString
 from pyasn1_modules import rfc5280
 
 from asn1 import IVXVPublicKeyParameters, ivxv_ecc_oid, IVXVPublicKey
-from crypto import EGPublicKey, EGPrivateKey
-from parsing import pem_to_der, extract_point_from_der
-
-
-def extract_public_key_from_asn1(data: bytes) -> Point:
-    spki, _ = der_decoder.decode(pem_to_der(data), asn1Spec=rfc5280.SubjectPublicKeyInfo())
-    pkey, _ = der_decoder.decode(spki["subjectPublicKey"].asOctets(), asn1Spec=IVXVPublicKey())
-    ec_point: bytes = pkey["ecPoint"].asOctets()
-    return extract_point_from_der(ec_point)
+from key import PrivateKey, PublicKey
 
 
 def export_public_key(key: Point, filepath: str):
@@ -50,13 +40,13 @@ def export_public_key(key: Point, filepath: str):
         f.write(pem_bytes)
 
 
-def import_private_key(filepath: str) -> EGPrivateKey:
-    x = keys.import_private_key(filepath, PEMEncoder())
-    return EGPrivateKey(x)
-
-
-def import_public_key(filepath: str) -> EGPublicKey:
+def import_private_key(filepath: str):
     with open(filepath, "rb") as f:
         data = f.read()
-    H = extract_public_key_from_asn1(data)
-    return EGPublicKey(H)
+    return PrivateKey.from_asn1(data)
+
+
+def import_public_key(filepath: str):
+    with open(filepath, "rb") as f:
+        data = f.read()
+    return PublicKey.from_asn1(data)

@@ -9,7 +9,7 @@ ivxv_ecc_oid = ObjectIdentifier("1.3.6.1.4.1.99999.1")
 class IVXVPublicKeyParameters(Sequence):
     componentType = NamedTypes(
         NamedType("curveName", GeneralString()),
-        NamedType("electionId", GeneralString()),
+        NamedType("electionId", GeneralString())
     )
 
 
@@ -20,7 +20,7 @@ class IVXVPublicKey(Sequence):
 class ElGamalEncryptedMessage(Sequence):
     componentType = NamedTypes(
         NamedType("u", OctetString()),
-        NamedType("v", OctetString()),
+        NamedType("v", OctetString())
     )
 
 
@@ -28,4 +28,15 @@ class EncryptedBallot(Sequence):
     componentType = NamedTypes(
         NamedType("algorithm", rfc5280.AlgorithmIdentifier()),
         NamedType("cipher", ElGamalEncryptedMessage())
+    )
+
+
+class ProofSeed(Sequence):
+    componentType = NamedTypes(
+        NamedType("niProofDomain", GeneralString()),
+        NamedType("publicKey", rfc5280.SubjectPublicKeyInfo()),
+        NamedType("ciphertext", EncryptedBallot()),
+        NamedType("decrypted", OctetString()),
+        NamedType("msgCommitment", OctetString()),
+        NamedType("keyCommitment", OctetString())
     )
