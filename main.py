@@ -11,17 +11,16 @@ def keygen():
     x, H = keys.gen_keypair(P384)
     keys.export_private_key(x, curve=P384, encoder=PEMEncoder(), filepath="./demo.key")
     export_public_key(H, filepath="./demo.pem")
-    return x, H
 
 
 def fetch_keys():
-    sk = import_private_key("./demo.key")
     pk = import_public_key("./demo.pem")
+    sk = import_private_key("./demo.key", pk.election_id)
     return sk, pk
 
 
 def main():
-    # x, H = keygen()
+    # keygen()
     sk, pk = fetch_keys()
 
     choice = "0000.103"
