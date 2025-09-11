@@ -61,7 +61,7 @@ PADDING_FILL = b"\xFF"
 PADDING_END = b"\xFE"
 
 
-def encode_to_point(message: bytes, curve: Curve, max_tries: int) -> Point:
+def encode_to_point(message: bytes, curve: Curve, max_tries: int = 10) -> Point:
     curve_byte_len = (curve.p.bit_length() + 7) // 8
 
     padding_head = PADDING_HEAD[max_tries]
@@ -80,7 +80,7 @@ def encode_to_point(message: bytes, curve: Curve, max_tries: int) -> Point:
     raise RuntimeError("could not encode the data as a curve point")
 
 
-def decode_from_point(M: Point, curve: Curve, shift: int) -> bytes:
+def decode_from_point(M: Point, curve: Curve, shift: int = 10) -> bytes:
     curve_byte_len = (curve.p.bit_length() + 7) // 8
 
     x_bytes = M.x.to_bytes(curve_byte_len, "big")

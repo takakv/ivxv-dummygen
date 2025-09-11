@@ -15,7 +15,7 @@ class ElGamalCiphertext:
             self.U = U
             self.V = V
 
-    def to_asn1(self) -> bytes:
+    def to_asn1(self) -> EncryptedBallot:
         eem = ElGamalEncryptedMessage()
         eem["u"] = point_to_der(self.U)
         eem["v"] = point_to_der(self.V)
@@ -27,10 +27,24 @@ class ElGamalCiphertext:
         eb["algorithm"] = ai
         eb["cipher"] = eem
 
-        return der_encoder.encode(eb)
+        return eb
 
-    def from_asn1(self, data: bytes):
+    def to_bytes(self) -> bytes:
+        return der_encoder.encode(self.to_asn1())
+
+    def from_bytes(self, data: bytes):
         eb, _ = der_decoder.decode(data, asn1Spec=EncryptedBallot())
         eem = eb["cipher"]
         self.U = point_from_der(eem["u"])
         self.V = point_from_der(eem["v"])
+
+
+class DecryptionProof:
+    mComm: Point
+    kComm: Point
+    response: int
+
+    def __init__(self, mc: Point, kc: Point, res: int):
+        self.mComm = mc
+        self.kComm = kc
+        self.response = res
