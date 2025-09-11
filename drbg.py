@@ -4,6 +4,8 @@ import math
 HASH_ALGO = hashlib.sha256
 
 
+# https://github.com/valimised/ivxv/blob/published/common/java/src/main/java/ee/ivxv/common/crypto/rnd/DPRNG.java
+# https://github.com/valimised/ivxv/blob/published/common/java/src/main/java/ee/ivxv/common/math/IntegerConstructor.java#L20
 def randbelow(seed: bytes, n: int) -> int:
     """Return a pseudorandom int in the range [0, n)."""
     bound_size = (n.bit_length() + 7) // 8
@@ -12,19 +14,27 @@ def randbelow(seed: bytes, n: int) -> int:
         mask_len = 8
 
     block_len = HASH_ALGO().digest_size
-    blocks_needed = math.ceil(bound_size / block_len)
 
     counter = 0
+    buffer = b""
+
     rand = n
     while not (rand < n):
-        buf = b""
+        # Compute the minimum number of hash outputs needed to meet the required byte-count.
+        blocks_needed = math.ceil((bound_size - len(buffer)) / block_len)
 
         for i in range(blocks_needed):
             counter += 1
-            buf += HASH_ALGO(counter.to_bytes(8, "big") + seed).digest()
+            buffer += HASH_ALGO(counter.to_bytes(8, "big") + seed).digest()
 
-        high_byte = buf[0] & ((1 << mask_len) - 1)
-        rand_buf = bytes([high_byte]) + buf[1:]
-        rand = int.from_bytes(rand_buf, "big", signed=False)
+        # Mask off the highest byte in order to salvage some bits.
+        # See also 'Bitmask with rejection (Unbiased)' in
+        # https://www.pcg-random.org/posts/bounded-rands.html
+        high_byte = buffer[0] & ((1 << mask_len) - 1)
+        tmp_buffer = bytes([high_byte]) + buffer[1:bound_size]
+        rand = int.from_bytes(tmp_buffer, "big", signed=False)
+
+        # Clear the consumed bytes form the buffer.
+        buffer = buffer[bound_size:]
 
     return rand
