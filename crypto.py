@@ -8,7 +8,7 @@ from asn1 import ProofSeed, EncryptedBallot
 from ciphertext import ElGamalCiphertext, DecryptionProof
 from drbg import randbelow
 from key import PublicKey, PrivateKey
-from parsing import point_to_der
+from parsing import point_to_bytes
 from utils import decode_from_point, encode_to_point
 
 ENCODING_MAX_TRIES = 10
@@ -37,9 +37,9 @@ def provably_decrypt(ct: ElGamalCiphertext, sk: PrivateKey) -> tuple[Point, Decr
     message_commitment = ct.U * t
     key_commitment = sk.curve.G * t
 
-    message_bytes = point_to_der(M)
-    mc_bytes = point_to_der(message_commitment)
-    kc_bytes = point_to_der(key_commitment)
+    message_bytes = point_to_bytes(M)
+    mc_bytes = point_to_bytes(message_commitment)
+    kc_bytes = point_to_bytes(key_commitment)
 
     seed = derive_seed(sk.public_key.spki, ct.to_asn1(), message_bytes, mc_bytes, kc_bytes)
     challenge = randbelow(seed, sk.curve.q)
@@ -56,26 +56,28 @@ def decrypt_and_decode(ct: ElGamalCiphertext, sk: PrivateKey, shift=ENCODING_MAX
 
 
 def verify_proof(M: Point, ct: ElGamalCiphertext, pk: PublicKey, proof: DecryptionProof) -> bool:
-    message_bytes = point_to_der(M)
-    mc_bytes = point_to_der(proof.mComm)
-    kc_bytes = point_to_der(proof.kComm)
+    message_bytes = point_to_bytes(M)
+    mc_bytes = point_to_bytes(proof.mComm)
+    kc_bytes = point_to_bytes(proof.kComm)
 
     seed = derive_seed(pk.spki, ct.to_asn1(), message_bytes, mc_bytes, kc_bytes)
     challenge = randbelow(seed, pk.curve.q)
+
+    proof_ok = True
 
     lhs1 = proof.response * ct.U
     rhs1 = proof.mComm + (ct.V - M) * challenge
     if lhs1 != rhs1:
         print("[-] Proof component 'message commitment' failed to verify.")
-        return False
+        proof_ok = False
 
     lhs2 = proof.response * pk.curve.G
     rhs2 = proof.kComm + pk.H * challenge
     if lhs2 != rhs2:
         print("[-] Proof component 'key commitment' failed to verify.")
-        return False
+        proof_ok = False
 
-    return True
+    return proof_ok
 
 
 def derive_seed(pub: rfc5280.SubjectPublicKeyInfo, enc: EncryptedBallot, dec: bytes,

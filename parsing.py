@@ -13,7 +13,8 @@ def pem_to_der(data: bytes) -> bytes:
     return data
 
 
-def point_from_der(der: bytes | OctetString) -> Point:
+def point_from_bytes(der: bytes | OctetString) -> Point:
+    """Recover a curve point from its SEC 1 uncompressed byte representation."""
     if isinstance(der, OctetString):
         der = der.asOctets()
 
@@ -27,7 +28,8 @@ def point_from_der(der: bytes | OctetString) -> Point:
     return Point(x, y, curve=P384)
 
 
-def point_to_der(P: Point) -> bytes:
+def point_to_bytes(P: Point) -> bytes:
+    """Get the SEC 1 uncompressed byte representation of the curve point."""
     bl = (P.curve.p.bit_length() + 7) // 8
     x_bytes = P.x.to_bytes(bl, "big")
     y_bytes = P.y.to_bytes(bl, "big")

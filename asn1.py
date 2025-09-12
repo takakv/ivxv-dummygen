@@ -42,7 +42,7 @@ class ProofSeed(Sequence):
     )
 
 
-class DecryptionProof(Sequence):
+class ASNDecryptionProof(Sequence):
     componentType = NamedTypes(
         NamedType("msgCommitment", OctetString()),
         NamedType("keyCommitment", OctetString()),

@@ -10,7 +10,7 @@ from pyasn1.type.univ import BitString
 from pyasn1_modules import rfc5280
 
 from asn1 import IVXVPublicKey, IVXVPublicKeyParameters, ivxv_ecc_oid
-from parsing import pem_to_der, point_from_der
+from parsing import pem_to_der, point_from_bytes
 
 
 class PublicKey:
@@ -28,7 +28,7 @@ class PublicKey:
         spki, _ = der_decoder.decode(pem_to_der(data), asn1Spec=rfc5280.SubjectPublicKeyInfo())
         pkey, _ = der_decoder.decode(spki["subjectPublicKey"].asOctets(), asn1Spec=IVXVPublicKey())
         params, _ = der_decoder.decode(spki["algorithm"]["parameters"].asOctets(), asn1Spec=IVXVPublicKeyParameters())
-        return cls(point_from_der(pkey["ecPoint"]), params["electionId"], spki)
+        return cls(point_from_bytes(pkey["ecPoint"]), params["electionId"], spki)
 
     def public_bytes(self, encoding: Literal["DER", "PEM"] = "DER") -> bytes:
         if encoding != "DER" and encoding != "PEM":

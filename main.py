@@ -20,7 +20,7 @@ def fetch_keys():
     return sk, pk
 
 
-def main():
+def test():
     # keygen()
     sk, pk = fetch_keys()
 
@@ -31,8 +31,7 @@ def main():
         f.write(ct.to_bytes())
 
     with open("./ct.bin", "rb") as f:
-        ct = ElGamalCiphertext()
-        ct.from_bytes(f.read())
+        ct = ElGamalCiphertext.from_bytes(f.read())
 
     dec = decrypt_and_decode(ct, sk)
     assert dec == choice
@@ -41,6 +40,10 @@ def main():
     assert choice == decode_from_point(M, pk.curve).decode()
 
     assert verify_proof(M, ct, pk, proof)
+
+
+def main():
+    test()
 
 
 if __name__ == "__main__":
