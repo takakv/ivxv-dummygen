@@ -59,16 +59,18 @@ PADDING_HEAD = [
 ]
 PADDING_FILL = b"\xFF"
 PADDING_END = b"\xFE"
+IVXV_SHIFT = 10
 
 
-def encode_to_point(message: bytes, curve: Curve, max_tries: int = 10) -> Point:
+def encode_to_point(message: bytes, curve: Curve, shift=IVXV_SHIFT) -> Point:
     curve_byte_len = (curve.p.bit_length() + 7) // 8
 
-    padding_head = PADDING_HEAD[max_tries]
+    padding_head = PADDING_HEAD[shift]
     padding_len = curve_byte_len - len(padding_head) - len(message) - 1
     padded = bytes(padding_head) + (PADDING_FILL * padding_len) + PADDING_END + message
 
-    candidate = int.from_bytes(padded, "big") << max_tries
+    candidate = int.from_bytes(padded, "big") << shift
+    max_tries = 2 ** shift
     for _ in range(max_tries):
         # y^2 = x^3 + ax + b
         rhs = (pow(candidate, 3, curve.p) + curve.a * candidate + curve.b) % curve.p
@@ -80,7 +82,7 @@ def encode_to_point(message: bytes, curve: Curve, max_tries: int = 10) -> Point:
     raise RuntimeError("could not encode the data as a curve point")
 
 
-def decode_from_point(M: Point, curve: Curve, shift: int = 10) -> bytes:
+def decode_from_point(M: Point, curve: Curve, shift=IVXV_SHIFT) -> bytes:
     curve_byte_len = (curve.p.bit_length() + 7) // 8
 
     x_bytes = M.x.to_bytes(curve_byte_len, "big")

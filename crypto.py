@@ -11,16 +11,14 @@ from key import PublicKey, PrivateKey
 from parsing import point_to_bytes
 from utils import decode_from_point, encode_to_point
 
-ENCODING_MAX_TRIES = 10
-
 
 def encrypt(M: Point, pk: PublicKey) -> ElGamalCiphertext:
     r = secrets.randbelow(pk.curve.q)
     return ElGamalCiphertext(pk.curve.G * r, M + (pk.H * r))
 
 
-def encode_and_encrypt(m: str, pk: PublicKey, shift=ENCODING_MAX_TRIES) -> ElGamalCiphertext:
-    encoded = encode_to_point(m.encode(), pk.curve, shift)
+def encode_and_encrypt(m: str, pk: PublicKey) -> ElGamalCiphertext:
+    encoded = encode_to_point(m.encode(), pk.curve)
     return encrypt(encoded, pk)
 
 
@@ -49,9 +47,9 @@ def provably_decrypt(ct: ElGamalCiphertext, sk: PrivateKey) -> tuple[Point, Decr
     return M, DecryptionProof(message_commitment, key_commitment, response)
 
 
-def decrypt_and_decode(ct: ElGamalCiphertext, sk: PrivateKey, shift=ENCODING_MAX_TRIES) -> str:
+def decrypt_and_decode(ct: ElGamalCiphertext, sk: PrivateKey) -> str:
     M = decrypt(ct, sk)
-    m_bytes = decode_from_point(M, sk.curve, shift)
+    m_bytes = decode_from_point(M, sk.curve)
     return m_bytes.decode()
 
 
