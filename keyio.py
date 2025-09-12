@@ -1,14 +1,10 @@
-import secrets
-
 from fastecdsa.point import Point
 
 from key import PrivateKey, PublicKey
 
 
-def export_public_key(key: Point, filepath: str):
-    election_id = "DEMO-" + secrets.token_hex(3).upper()
+def export_public_key(key: Point, filepath: str, election_id):
     public_key = PublicKey(key, election_id)
-
     with open(filepath, "wb") as f:
         f.write(public_key.public_bytes())
 

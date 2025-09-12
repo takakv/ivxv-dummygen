@@ -2,6 +2,7 @@ import base64
 
 from fastecdsa.curve import P384
 from fastecdsa.point import Point
+from pyasn1.codec.der import decoder as der_decoder, encoder as der_encoder
 from pyasn1.type.univ import OctetString
 
 
@@ -34,3 +35,26 @@ def point_to_bytes(P: Point) -> bytes:
     x_bytes = P.x.to_bytes(bl, "big")
     y_bytes = P.y.to_bytes(bl, "big")
     return b"\x04" + x_bytes + y_bytes
+
+
+def point_from_der(der: bytes | OctetString) -> Point:
+    """Extract a curve point from its DER-encoded SEC 1 byte representation.
+
+    Use this method only if the point bytes are prefixed with the
+    OCTET STRING type. Otherwise, use `point_from_bytes()`.
+    """
+    if isinstance(der, OctetString):
+        der = der.asOctets()
+
+    point_bytes, _ = der_decoder.decode(der, asn1Spec=OctetString())
+    return point_from_bytes(point_bytes)
+
+
+def point_to_der(point: Point) -> bytes:
+    """Get the DER-encoded SEC 1 uncompressed byte representation of the curve point.
+
+    Use this method only if you need the point bytes as a valid ASN1 DER object,
+    i.e. prefixed with the OCTET STRING type. Otherwise, use `point_to_bytes()`.
+    """
+    ecp = OctetString(point_to_bytes(point))
+    return der_encoder.encode(ecp)
